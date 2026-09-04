@@ -60,7 +60,6 @@ Use the following settings:
 OPENAI_API_KEY="your-api-key-here"
 OPENAI_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 OPENAI_MODEL="GLM-4.1V-Thinking-Flash"
-OPENAI_MAX_TOKENS="4000"
 APP_LANGUAGE="Java"  # Or Python, JavaScript, C++, etc.
 ```
 
