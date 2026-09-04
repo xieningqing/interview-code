@@ -1,4 +1,4 @@
-name: Build CrackCoder
+name: Build interview-code
 
 on:
   push:
@@ -7,9 +7,14 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
@@ -24,13 +29,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Read package version
+        id: package
+        shell: bash
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
       - name: Build Windows
-        run: npm run dist:win
+        run: npm run dist:win -- --x64
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CrackCoder-Windows
+          name: interview-code-v${{ steps.package.outputs.version }}-win-x64
           path: |
             release/*.exe
             release/*.blockmap
@@ -39,6 +49,8 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
@@ -53,13 +65,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Read package version
+        id: package
+        shell: bash
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
       - name: Build macOS
-        run: npm run dist:mac
+        run: npm run dist:mac -- --x64
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CrackCoder-macOS
+          name: interview-code-v${{ steps.package.outputs.version }}-mac-x64
           path: |
             release/*.dmg
             release/*.zip

@@ -1,5 +1,5 @@
 {
-  "name": "crackcoder",
+  "name": "interview-code",
   "version": "1.0.0",
   "description": "Invisible AI tool for solving Coding Questions during technical interviews",
   "main": "dist/main.js",
@@ -40,8 +40,8 @@
     "react-dom": "^18.2.0"
   },
   "build": {
-    "appId": "com.crackcoder.app",
-    "productName": "CrackCoder",
+    "appId": "com.interview-code.app",
+    "productName": "interview-code",
     "directories": {
       "output": "release"
     },
@@ -52,7 +52,16 @@
     "extraFiles": [
       ".env.example"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release",
+        "releaseName": "interview-code v${version}",
+        "releaseNotesFile": "release-notes.md"
+      }
+    ],
     "mac": {
+      "artifactName": "interview-code-v${version}-mac-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
       "target": [
         "dmg",
@@ -64,6 +73,12 @@
         "nsis",
         "portable"
       ]
+    },
+    "nsis": {
+      "artifactName": "interview-code-v${version}-win-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "interview-code-v${version}-win-${arch}-portable.${ext}"
     },
     "linux": {
       "target": [
