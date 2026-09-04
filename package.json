@@ -55,11 +55,13 @@
     "publish": [
       {
         "provider": "github",
-        "releaseType": "release",
-        "releaseName": "interview-code v${version}",
-        "releaseNotesFile": "release-notes.md"
+        "releaseType": "release"
       }
     ],
+    "releaseInfo": {
+      "releaseName": "interview-code v${version}",
+      "releaseNotesFile": "release-notes.md"
+    },
     "mac": {
       "artifactName": "interview-code-v${version}-mac-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
