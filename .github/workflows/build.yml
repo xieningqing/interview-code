@@ -100,9 +100,43 @@ jobs:
       - name: Build macOS
         run: npm run dist:mac
 
+      - name: Prepare macOS artifact
+        shell: bash
+        run: |
+          artifact_dir="$GITHUB_WORKSPACE/macos-artifact"
+          rm -rf "$artifact_dir"
+          mkdir -p "$artifact_dir"
+
+          mac_zip="$(find release -maxdepth 1 -type f -name '*-mac-x64.zip' -print -quit)"
+          if [ -z "$mac_zip" ]; then
+            echo "Missing macOS zip in release"
+            exit 1
+          fi
+
+          ditto -x -k --sequesterRsrc "$mac_zip" "$artifact_dir"
+          app_path="$(find "$artifact_dir" -type d -name '*.app' -print -quit)"
+          if [ -z "$app_path" ]; then
+            echo "The macOS zip does not contain an .app bundle"
+            exit 1
+          fi
+
+          app_parent="$(dirname "$app_path")"
+          if [ "$app_parent" != "$artifact_dir" ]; then
+            mv "$app_path" "$artifact_dir/"
+          fi
+
+          app_count="$(find "$artifact_dir" -maxdepth 1 -type d -name '*.app' | wc -l | tr -d ' ')"
+          if [ "$app_count" -ne 1 ]; then
+            echo "Expected exactly one .app bundle, found $app_count"
+            exit 1
+          fi
+
+          find "$artifact_dir" -mindepth 1 -maxdepth 1 ! -name '*.app' -exec rm -rf {} +
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: interview-code-v${{ steps.package.outputs.version }}-mac-x64
-          path: release/*.zip
+          path: macos-artifact/*.app
+          include-hidden-files: true
           if-no-files-found: error
