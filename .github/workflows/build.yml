@@ -36,16 +36,41 @@ jobs:
           node -e "require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
 
       - name: Build Windows
-        run: npm run dist:win -- --x64
+        run: npm run dist:win
+
+      - name: Prepare Windows artifact
+        shell: pwsh
+        run: |
+          $artifactDir = Join-Path $env:GITHUB_WORKSPACE "windows-artifact"
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+          $portableExecutables = @(Get-ChildItem release -File -Filter "*-portable.exe")
+          if ($portableExecutables.Count -ne 1) {
+            throw "Expected exactly one portable executable, found $($portableExecutables.Count)"
+          }
+
+          $envExample = Join-Path $env:GITHUB_WORKSPACE "release\.env.example"
+          if (-not (Test-Path $envExample -PathType Leaf)) {
+            throw "Missing release/.env.example"
+          }
+
+          Copy-Item $portableExecutables[0].FullName (Join-Path $artifactDir $portableExecutables[0].Name)
+          Copy-Item $envExample (Join-Path $artifactDir ".env.example")
+
+          $artifactFiles = @(Get-ChildItem $artifactDir -File)
+          if ($artifactFiles.Count -ne 2) {
+            throw "Expected exactly two files in the Windows artifact, found $($artifactFiles.Count)"
+          }
+          $artifactFiles | Select-Object Name, Length
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: interview-code-v${{ steps.package.outputs.version }}-win-x64
           path: |
-            release/*.exe
-            release/*.blockmap
-            release/latest.yml
+            windows-artifact/*.exe
+            windows-artifact/.env.example
+          include-hidden-files: true
           if-no-files-found: error
 
   build-macos:

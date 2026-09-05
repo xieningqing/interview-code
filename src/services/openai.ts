@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const envPath = app.isPackaged
-  ? path.join(path.dirname(process.execPath), '.env')
+  ? path.join(process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath), '.env')
   : path.resolve(__dirname, '../../.env');
 
 const envResult = dotenv.config({ path: envPath });

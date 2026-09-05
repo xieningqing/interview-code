@@ -50,6 +50,8 @@ https://github.com/user-attachments/assets/179701eb-0fcf-4e33-86f3-c92688f508a5
 
 For `npm start`, create a `.env` file in the project root directory. For a packaged Windows app, create a `.env` file next to `interview-code.exe`; the app loads this external file on every launch.
 
+The Windows release download contains exactly two files: the portable executable and `.env.example`. Copy `.env.example` to `.env`, fill in your settings, and keep it beside the executable.
+
 ```text
 interview-code.exe
 .env

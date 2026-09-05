@@ -11,7 +11,7 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
-    "dist:win": "npm run build && electron-builder --win"
+    "dist:win": "npm run build && electron-builder --win portable --x64 && node scripts/copy-env-example.js"
   },
   "author": "",
   "license": "MIT",
@@ -45,6 +45,7 @@
     "directories": {
       "output": "release"
     },
+    "electronDist": "node_modules/electron/dist",
     "files": [
       "dist/**/*",
       "package.json"
@@ -52,16 +53,6 @@
     "extraFiles": [
       ".env.example"
     ],
-    "publish": [
-      {
-        "provider": "github",
-        "releaseType": "release"
-      }
-    ],
-    "releaseInfo": {
-      "releaseName": "interview-code v${version}",
-      "releaseNotesFile": "release-notes.md"
-    },
     "mac": {
       "artifactName": "interview-code-v${version}-mac-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
@@ -72,12 +63,8 @@
     },
     "win": {
       "target": [
-        "nsis",
         "portable"
       ]
-    },
-    "nsis": {
-      "artifactName": "interview-code-v${version}-win-${arch}-setup.${ext}"
     },
     "portable": {
       "artifactName": "interview-code-v${version}-win-${arch}-portable.${ext}"
