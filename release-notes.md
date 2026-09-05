@@ -14,4 +14,4 @@
 ### Artifacts
 - Windows x64 portable app: `interview-code-v1.0.0-win-x64-portable.exe`
 - Environment template: `.env.example` (copy to `.env` next to the portable executable)
-- macOS build: `interview-code-v1.0.0-mac-x64.dmg` and `interview-code-v1.0.0-mac-x64.zip`
+- macOS build: `interview-code-v1.0.0-mac-x64.zip`

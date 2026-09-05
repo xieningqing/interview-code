@@ -98,13 +98,11 @@ jobs:
           node -e "require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + require('./package.json').version + '\n')"
 
       - name: Build macOS
-        run: npm run dist:mac -- --x64
+        run: npm run dist:mac
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: interview-code-v${{ steps.package.outputs.version }}-mac-x64
-          path: |
-            release/*.dmg
-            release/*.zip
+          path: release/*.zip
           if-no-files-found: error

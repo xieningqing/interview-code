@@ -9,8 +9,8 @@
     "watch": "concurrently \"tsc -w\" \"webpack --config webpack.config.js --watch\"",
     "dev": "concurrently \"npm run watch\" \"electron .\"",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:mac": "npm run build && electron-builder --mac",
+    "dist": "npm run build && electron-builder && node scripts/clean-release-metadata.js",
+    "dist:mac": "npm run build && electron-builder --mac zip --x64 && node scripts/clean-mac-release.js",
     "dist:win": "npm run build && electron-builder --win portable --x64 && node scripts/copy-env-example.js"
   },
   "author": "",
@@ -57,7 +57,6 @@
       "artifactName": "interview-code-v${version}-mac-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
       "target": [
-        "dmg",
         "zip"
       ]
     },
