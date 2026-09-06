@@ -215,7 +215,19 @@ const buildResultPages = (solution: ProcessedSolution): ResultPage[] => {
       ? 'Multiple Choice Answers'
       : 'Answer';
 
-  if (isCoding) {
+  const addAnswerPage = () => {
+    if (!solution.answer) return;
+
+    pages.push({
+      type: 'text',
+      title: answerTitle,
+      content: solution.answer
+    });
+  };
+
+  const addCodePages = () => {
+    if (!solution.code) return;
+
     for (let index = 0; index < codeLines.length; index += CODE_LINES_PER_PAGE) {
       pages.push({
         type: 'code',
@@ -225,7 +237,9 @@ const buildResultPages = (solution: ProcessedSolution): ResultPage[] => {
         totalLines: codeLines.length
       });
     }
+  };
 
+  const addComplexityPage = () => {
     if (solution.timeComplexity || solution.spaceComplexity) {
       pages.push({
         type: 'complexity',
@@ -234,7 +248,9 @@ const buildResultPages = (solution: ProcessedSolution): ResultPage[] => {
         spaceComplexity: solution.spaceComplexity
       });
     }
+  };
 
+  const addExplanationPage = () => {
     if (solution.explanation) {
       pages.push({
         type: 'text',
@@ -242,35 +258,21 @@ const buildResultPages = (solution: ProcessedSolution): ResultPage[] => {
         content: solution.explanation
       });
     }
+  };
 
+  // Keep every populated field visible even when questionType is unknown or incorrect.
+  if (isCoding) {
+    addAnswerPage();
+    addCodePages();
+    addComplexityPage();
+    addExplanationPage();
     return pages;
   }
 
-  if (solution.answer) {
-    pages.push({
-      type: 'text',
-      title: answerTitle,
-      content: solution.answer
-    });
-  }
-
-  if (solution.explanation) {
-    pages.push({
-      type: 'text',
-      title: 'Explanation',
-      content: solution.explanation
-    });
-  }
-
-  if (solution.code) {
-    pages.push({
-      type: 'code',
-      title: 'Response',
-      lines: codeLines,
-      startLine: 1,
-      totalLines: codeLines.length
-    });
-  }
+  addAnswerPage();
+  addExplanationPage();
+  addCodePages();
+  addComplexityPage();
 
   if (pages.length === 0) {
     pages.push({

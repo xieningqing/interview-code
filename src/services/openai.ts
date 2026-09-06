@@ -75,10 +75,9 @@ type MessageContent =
   | { type: "image_url"; image_url: { url: string } };
 
 function parseJsonResult(content: string): ProcessedSolution {
+  const rawQuestionType = readPartialJsonStringValue(content, 'questionType');
   const fallback: Partial<ProcessedSolution> = {
-    questionType: normalizeQuestionType(
-      readPartialJsonStringValue(content, 'questionType')
-    ),
+    questionType: rawQuestionType ? normalizeQuestionType(rawQuestionType) : undefined,
     answer: readPartialJsonStringValue(content, 'answer'),
     explanation: readPartialJsonStringValue(content, 'explanation'),
     approach: readPartialJsonStringValue(content, 'approach'),
@@ -92,7 +91,7 @@ function parseJsonResult(content: string): ProcessedSolution {
   if (jsonText) {
     try {
       const parsed = JSON.parse(jsonText) as Partial<ProcessedSolution>;
-      return normalizeProcessedSolution({
+      const parsedSolution: Partial<ProcessedSolution> = {
         questionType: parsed.questionType || fallback.questionType,
         answer: parsed.answer || fallback.answer,
         explanation: parsed.explanation || fallback.explanation,
@@ -100,25 +99,32 @@ function parseJsonResult(content: string): ProcessedSolution {
         code: parsed.code || fallback.code,
         timeComplexity: parsed.timeComplexity || fallback.timeComplexity,
         spaceComplexity: parsed.spaceComplexity || fallback.spaceComplexity
-      });
+      };
+
+      if (hasMeaningfulResponse(parsedSolution)) {
+        return normalizeProcessedSolution(parsedSolution);
+      }
     } catch (error) {
       console.warn('Strict JSON parsing failed, falling back to partial extraction:', error);
     }
   }
 
-  if (
-    fallback.questionType ||
-    fallback.answer ||
-    fallback.explanation ||
-    fallback.approach ||
-    fallback.code ||
-    fallback.timeComplexity ||
-    fallback.spaceComplexity
-  ) {
+  if (hasMeaningfulResponse(fallback)) {
     return normalizeProcessedSolution(fallback);
   }
 
   throw new Error('Model returned an empty or non-JSON response');
+}
+
+function hasMeaningfulResponse(solution: Partial<ProcessedSolution>): boolean {
+  return [
+    solution.answer,
+    solution.explanation,
+    solution.approach,
+    solution.code,
+    solution.timeComplexity,
+    solution.spaceComplexity
+  ].some(value => typeof value === 'string' && value.trim().length > 0);
 }
 
 function normalizeQuestionType(value: unknown): QuestionType {
@@ -287,6 +293,14 @@ export async function processScreenshots(
                  Classify the question as exactly one of: "coding", "single_choice", "multiple_choice", "short_answer", or "unknown".
                  For single_choice, select exactly one option.
                  For multiple_choice, select every correct option and include all selected option labels in the answer. Do not reduce a multiple-choice question to only one option.
+                 Strict output requirements:
+                 - Return exactly one JSON object. Do not include Markdown fences, comments, or any text outside the JSON object.
+                 - Never return an empty object or leave every response field empty.
+                 - Treat questionType as an advisory classification, not a reason to omit content.
+                 - For coding questions, provide non-empty explanation, code, timeComplexity, and spaceComplexity fields. The answer field may be empty.
+                 - For non-coding questions, provide non-empty answer and explanation fields. Leave code, timeComplexity, and spaceComplexity empty.
+                 - If the question type is uncertain because the screenshot is large, partial, or unclear, use questionType "unknown" but still return every answer, explanation, code, and complexity field that can be inferred from the visible content.
+                 - Use questionType "unknown" only when the screenshots do not contain enough information to classify the question, and explain the limitation in the explanation field. Never clear otherwise useful fields just because classification is uncertain.
                  Return only valid JSON in the following format:
                  {
                    "questionType": "coding | single_choice | multiple_choice | short_answer | unknown",

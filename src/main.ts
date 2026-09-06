@@ -177,12 +177,14 @@ async function handleProcessScreenshots() {
   isProcessing = true;
   hasCompletedResult = false;
   const runId = ++processingRunId;
+  let streamedContent = '';
   mainWindow?.webContents.send('processing-started');
 
   try {
     const result = await openaiService.processScreenshots(screenshotQueue, {
       onTextDelta: (delta) => {
         if (!isProcessing || runId !== processingRunId) return;
+        streamedContent += delta;
         mainWindow?.webContents.send('processing-stream', delta);
       }
     });
@@ -204,15 +206,16 @@ async function handleProcessScreenshots() {
     }
     
     hasCompletedResult = true;
+    const partialResponse = streamedContent.trim();
     mainWindow?.webContents.send('processing-complete', JSON.stringify({
       questionType: 'unknown',
-      answer: '',
-      explanation: '',
+      answer: partialResponse,
+      explanation: partialResponse ? `The response was incomplete: ${errorMessage}` : '',
       error: errorMessage,
       approach: 'Error occurred while processing',
-      code: 'Error: ' + errorMessage,
-      timeComplexity: 'N/A',
-      spaceComplexity: 'N/A'
+      code: partialResponse ? '' : 'Error: ' + errorMessage,
+      timeComplexity: partialResponse ? '' : 'N/A',
+      spaceComplexity: partialResponse ? '' : 'N/A'
     }));
   } finally {
     if (runId === processingRunId) {
