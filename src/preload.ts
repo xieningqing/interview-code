@@ -18,6 +18,12 @@ contextBridge.exposeInMainWorld('electron', {
   onProcessingStream: (callback: (delta: string) => void) => {
     ipcRenderer.on('processing-stream', (_, delta) => callback(delta));
   },
+  onProcessingReasoning: (callback: (delta: string) => void) => {
+    ipcRenderer.on('processing-reasoning', (_, delta) => callback(delta));
+  },
+  onProcessingRestart: (callback: () => void) => {
+    ipcRenderer.on('processing-restart', () => callback());
+  },
   onResultPageCommand: (callback: (direction: 'previous' | 'next') => void) => {
     ipcRenderer.on('result-page-command', (_, direction) => callback(direction));
   },

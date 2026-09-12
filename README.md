@@ -62,8 +62,39 @@ Use the following settings:
 OPENAI_API_KEY="your-api-key-here"
 OPENAI_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 OPENAI_MODEL="GLM-4.1V-Thinking-Flash"
+OPENAI_THINKING="disabled"
+OPENAI_MAX_TOKENS="8192"
 APP_LANGUAGE="Java"  # Or Python, JavaScript, C++, etc.
 ```
+
+### Thinking / reasoning models
+
+Many current vision models are *reasoning* models: before writing the answer they
+stream a long internal reasoning pass, and **that pass is billed against
+`OPENAI_MAX_TOKENS`**. With a small budget the model can consume every token while
+still thinking and return no answer at all, which surfaces in the app as
+`Model returned an empty or non-JSON response`.
+
+Set `OPENAI_THINKING="disabled"` to answer directly (also much faster), and keep
+`OPENAI_MAX_TOKENS` high enough for a complete solution. If the provider rejects the
+`thinking` parameter the app retries without it automatically.
+
+The app also retries by itself: an empty first attempt is repeated once with a doubled
+token budget, then once more without streaming/JSON mode.
+
+### Nothing the model says is thrown away
+
+If the response cannot be parsed as JSON, the full model output is still shown instead
+of an error:
+
+- Code fences are collected into the **Solution** pages, the remaining text becomes the
+  **Raw output (unparsed)** pages (22 lines per page, `Ctrl/Cmd + ←/→` to page through).
+- Markdown answers with several code blocks keep every block and every paragraph.
+- Text outside an otherwise valid JSON object is appended rather than dropped.
+- If the model produced no answer at all, only its internal reasoning is shown, clearly
+  labelled as reasoning so it is not mistaken for the answer.
+
+The parsing rules are covered by deterministic tests: `npm run test:parsing`.
 
 ## Usage
 

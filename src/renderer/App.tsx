@@ -17,6 +17,8 @@ interface ProcessedSolution {
   code: string;
   timeComplexity: string;
   spaceComplexity: string;
+  /** Set when the model output could not be parsed as JSON and is shown as-is. */
+  rawOutput?: boolean;
 }
 
 type PageDirection = 'previous' | 'next';
@@ -58,6 +60,8 @@ declare global {
       resetQueue: () => Promise<void>;
       onProcessingComplete: (callback: (result: string) => void) => void;
       onProcessingStream: (callback: (delta: string) => void) => void;
+      onProcessingReasoning: (callback: (delta: string) => void) => void;
+      onProcessingRestart: (callback: () => void) => void;
       onResultPageCommand: (callback: (direction: PageDirection) => void) => void;
       onScreenshotTaken: (callback: (data: Screenshot) => void) => void;
       onProcessingStarted: (callback: () => void) => void;
@@ -75,8 +79,13 @@ const readPartialJsonStringValue = (source: string, key: keyof ProcessedSolution
   const colonIndex = source.indexOf(':', keyIndex);
   if (colonIndex === -1) return '';
 
-  const quoteIndex = source.indexOf('"', colonIndex + 1);
-  if (quoteIndex === -1) return '';
+  // Only a quoted string can be read safely here: a `null`, number or object value
+  // would otherwise run into the next field's opening quote and copy its name.
+  let quoteIndex = colonIndex + 1;
+  while (quoteIndex < source.length && /\s/.test(source[quoteIndex])) {
+    quoteIndex += 1;
+  }
+  if (source[quoteIndex] !== '"') return '';
 
   let value = '';
   let escaping = false;
@@ -201,12 +210,67 @@ const normalizeResult = (value: Partial<ProcessedSolution>): ProcessedSolution =
     approach: explanation,
     code: value.code || '',
     timeComplexity: value.timeComplexity || '',
-    spaceComplexity: value.spaceComplexity || ''
+    spaceComplexity: value.spaceComplexity || '',
+    rawOutput: value.rawOutput === true ? true : undefined
   };
+};
+
+const RAW_LINES_PER_PAGE = 22;
+
+/**
+ * Raw fallback rendering: the model output could not be parsed as JSON, so every
+ * character of it is shown. Content is chunked like code pages so the full payload
+ * stays reachable with the pager instead of overflowing the window.
+ */
+const buildRawOutputPages = (solution: ProcessedSolution): ResultPage[] => {
+  const pages: ResultPage[] = [];
+
+  if (solution.code) {
+    const rawCodeLines = solution.code.split('\n');
+
+    for (let index = 0; index < rawCodeLines.length; index += CODE_LINES_PER_PAGE) {
+      pages.push({
+        type: 'code',
+        title: 'Raw output - code block',
+        lines: rawCodeLines.slice(index, index + CODE_LINES_PER_PAGE),
+        startLine: index + 1,
+        totalLines: rawCodeLines.length
+      });
+    }
+  }
+
+  const rawText = [solution.answer, solution.explanation].filter(Boolean).join('\n\n');
+
+  if (rawText) {
+    const rawLines = rawText.split('\n');
+
+    for (let index = 0; index < rawLines.length; index += RAW_LINES_PER_PAGE) {
+      pages.push({
+        type: 'text',
+        title: 'Raw output (unparsed)',
+        content: rawLines.slice(index, index + RAW_LINES_PER_PAGE).join('\n')
+      });
+    }
+  }
+
+  if (pages.length === 0) {
+    pages.push({
+      type: 'text',
+      title: 'Raw output (unparsed)',
+      content: 'No output was returned.'
+    });
+  }
+
+  return pages;
 };
 
 const buildResultPages = (solution: ProcessedSolution): ResultPage[] => {
   const pages: ResultPage[] = [];
+
+  if (solution.rawOutput) {
+    return buildRawOutputPages(solution);
+  }
+
   const codeLines = solution.code ? solution.code.split('\n') : [];
   const isCoding = solution.questionType === 'coding' || Boolean(solution.code);
   const answerTitle = solution.questionType === 'single_choice'
@@ -306,6 +370,7 @@ const App: React.FC = () => {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [streamText, setStreamText] = useState('');
+  const [reasoningChars, setReasoningChars] = useState<number>(0);
   const [resultPageIndex, setResultPageIndex] = useState(0);
   const [solutionStyle, setSolutionStyle] = useState<SolutionStyle>(() => ({
     '--solution-code-font-size': '14px',
@@ -394,11 +459,25 @@ const App: React.FC = () => {
       setResultPageIndex(0);
       streamTextRef.current = '';
       setStreamText('');
+      setReasoningChars(0);
     });
 
     window.electron.onProcessingStream((delta) => {
       streamTextRef.current += delta;
       setStreamText(streamTextRef.current);
+    });
+
+    // Reasoning models emit their thinking before any answer text; count it so the
+    // overlay can show that work is happening instead of an apparently empty panel.
+    window.electron.onProcessingReasoning((delta) => {
+      setReasoningChars(prev => prev + delta.length);
+    });
+
+    // A retry restarts the response from scratch.
+    window.electron.onProcessingRestart(() => {
+      streamTextRef.current = '';
+      setStreamText('');
+      setReasoningChars(0);
     });
 
     window.electron.onResultPageCommand((direction) => {
@@ -627,7 +706,9 @@ const App: React.FC = () => {
         {isProcessing ? (
           <div className="processing">
             <div className="processing-label">
-              Processing... ({screenshots.length} screenshots)
+              {reasoningChars > 0 && !streamPreview
+                ? `Thinking... (${reasoningChars.toLocaleString()} chars)`
+                : `Processing... (${screenshots.length} screenshots)`}
             </div>
             {streamPreview && (
               <pre className="stream-output">

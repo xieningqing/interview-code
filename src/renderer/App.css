@@ -347,6 +347,9 @@ body {
   border-radius: 4px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  /* Guarantees a raw-output page stays scrollable instead of overflowing the window. */
+  max-height: var(--solution-max-height, 420px);
+  overflow: auto;
 }
 
 .text-line {

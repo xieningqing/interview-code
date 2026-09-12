@@ -186,6 +186,18 @@ async function handleProcessScreenshots() {
         if (!isProcessing || runId !== processingRunId) return;
         streamedContent += delta;
         mainWindow?.webContents.send('processing-stream', delta);
+      },
+      // Reasoning models stream their thinking before the answer. It is not part of
+      // the result, but forwarding it keeps the overlay from looking frozen.
+      onReasoningDelta: (delta) => {
+        if (!isProcessing || runId !== processingRunId) return;
+        mainWindow?.webContents.send('processing-reasoning', delta);
+      },
+      // A retry starts a fresh response, so discard the previous partial output.
+      onAttemptRestart: () => {
+        if (!isProcessing || runId !== processingRunId) return;
+        streamedContent = '';
+        mainWindow?.webContents.send('processing-restart');
       }
     });
     // Check if processing was cancelled
@@ -207,6 +219,7 @@ async function handleProcessScreenshots() {
     
     hasCompletedResult = true;
     const partialResponse = streamedContent.trim();
+    // Render whatever the model already streamed as raw output instead of losing it.
     mainWindow?.webContents.send('processing-complete', JSON.stringify({
       questionType: 'unknown',
       answer: partialResponse,
@@ -215,7 +228,8 @@ async function handleProcessScreenshots() {
       approach: 'Error occurred while processing',
       code: partialResponse ? '' : 'Error: ' + errorMessage,
       timeComplexity: partialResponse ? '' : 'N/A',
-      spaceComplexity: partialResponse ? '' : 'N/A'
+      spaceComplexity: partialResponse ? '' : 'N/A',
+      rawOutput: true
     }));
   } finally {
     if (runId === processingRunId) {

@@ -7,6 +7,7 @@
     "start": "npm run build && electron .",
     "build": "tsc && webpack --config webpack.config.js",
     "watch": "concurrently \"tsc -w\" \"webpack --config webpack.config.js --watch\"",
+    "test:parsing": "tsc && node scripts/test-solution-parsing.js",
     "dev": "concurrently \"npm run watch\" \"electron .\"",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder && node scripts/clean-release-metadata.js",
