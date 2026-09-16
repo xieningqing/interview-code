@@ -163,11 +163,14 @@ async function handleTakeScreenshot() {
     screenshotQueue.push(screenshot);
 	
 
-    mainWindow?.show();
+    // Restore the overlay without moving focus away from the user's current app.
+    // BrowserWindow.show() focuses the window, which can look like a window switch
+    // to monitoring software on macOS.
+    mainWindow?.showInactive();
     mainWindow?.webContents.send('screenshot-taken', screenshot);
   } catch (error) {
     console.error('Error taking screenshot:', error);
-    mainWindow?.show();
+    mainWindow?.showInactive();
   }
 }
 
@@ -274,7 +277,8 @@ function handleToggleVisibility() {
   if (mainWindow.isVisible()) {
     mainWindow.hide();
   } else {
-    mainWindow.show();
+    // Cmd+B should reveal the overlay without making Electron the active app.
+    mainWindow.showInactive();
   }
 }
 

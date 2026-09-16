@@ -494,6 +494,10 @@ const App: React.FC = () => {
       const isCmdOrCtrl = event.metaKey || event.ctrlKey;
 	  
       const key = event.key.toLowerCase();
+      // These actions are global Cmd/Ctrl shortcuts. Without this guard, a plain
+      // `h` (and similarly Enter/R) in the renderer can trigger the action too.
+      if (!isCmdOrCtrl) return;
+
       if (isCmdOrCtrl && (key === 'arrowleft' || key === '<' || key === ',')) {
         event.preventDefault();
         goToResultPage('previous');
