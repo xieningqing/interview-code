@@ -46,9 +46,33 @@ let currentConfig: {
 function loadNativeModule(): KeyboardHookNative | null {
   try {
     if (process.platform === 'win32') {
-      const nativePath = path.join(__dirname, '../../native/build/Release/keyboard_hook.node');
-      keyboardHook = require(nativePath);
-      console.log('[KeyboardProtection] Native module loaded successfully');
+      // Try multiple possible paths for different environments
+      const possiblePaths = [
+        // Development: from dist/services/ to native/build/Release/
+        path.join(__dirname, '../../native/build/Release/keyboard_hook.node'),
+        // Packaged app: from app.asar/dist/services/ to app.asar.unpacked/native/build/Release/
+        path.join(__dirname, '../../native/build/Release/keyboard_hook.node').replace('app.asar', 'app.asar.unpacked'),
+        // Packaged app alternative: directly under resources
+        path.join(process.resourcesPath, 'native/build/Release/keyboard_hook.node'),
+      ];
+
+      let loadedPath: string | null = null;
+      for (const nativePath of possiblePaths) {
+        try {
+          keyboardHook = require(nativePath);
+          loadedPath = nativePath;
+          break;
+        } catch (err) {
+          // Try next path
+          continue;
+        }
+      }
+
+      if (!keyboardHook) {
+        throw new Error('Failed to load from any known path');
+      }
+
+      console.log('[KeyboardProtection] Native module loaded successfully from:', loadedPath);
       return keyboardHook;
     } else {
       console.warn('[KeyboardProtection] Only Windows is supported currently');
