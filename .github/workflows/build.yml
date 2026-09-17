@@ -35,8 +35,10 @@ jobs:
         run: |
           choco install visualstudio2022-workload-vctools -y
 
-      - name: Configure node-gyp
-        run: npm config set msvs_version 2022
+      - name: Set node-gyp environment variables
+        run: |
+          echo "npm_config_msvs_version=2022" >> $GITHUB_ENV
+          echo "GYP_MSVS_VERSION=2022" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: npm ci
