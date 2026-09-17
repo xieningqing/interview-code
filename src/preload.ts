@@ -36,4 +36,13 @@ contextBridge.exposeInMainWorld('electron', {
   onQueueReset: (callback: () => void) => {
     ipcRenderer.on('queue-reset', () => callback());
   },
-}); 
+
+  // Keyboard protection methods
+  keyboardProtection: {
+    enable: () => ipcRenderer.invoke('keyboard-protection-enable'),
+    disable: () => ipcRenderer.invoke('keyboard-protection-disable'),
+    getStatus: () => ipcRenderer.invoke('keyboard-protection-status'),
+    getShortcuts: () => ipcRenderer.invoke('keyboard-protection-get-shortcuts'),
+    updateShortcuts: (shortcuts: any) => ipcRenderer.invoke('keyboard-protection-update-shortcuts', shortcuts),
+  }
+});

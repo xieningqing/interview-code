@@ -1,0 +1,16 @@
+{
+  "name": "keyboard-hook-native",
+  "version": "1.0.0",
+  "description": "Native keyboard hook for Windows",
+  "main": "index.js",
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.0.0"
+  }
+}

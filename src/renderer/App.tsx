@@ -7,6 +7,12 @@ interface Screenshot {
   path: string;
 }
 
+interface KeyboardShortcut {
+  key: string;
+  label: string;
+  enabled: boolean;
+}
+
 type QuestionType = 'coding' | 'single_choice' | 'multiple_choice' | 'short_answer' | 'unknown';
 
 interface ProcessedSolution {
@@ -66,6 +72,13 @@ declare global {
       onScreenshotTaken: (callback: (data: Screenshot) => void) => void;
       onProcessingStarted: (callback: () => void) => void;
       onQueueReset: (callback: () => void) => void;
+      keyboardProtection: {
+        enable: () => Promise<boolean>;
+        disable: () => Promise<boolean>;
+        getStatus: () => Promise<{ isActive: boolean; enabledCount: number }>;
+        getShortcuts: () => Promise<KeyboardShortcut[]>;
+        updateShortcuts: (shortcuts: KeyboardShortcut[]) => Promise<boolean>;
+      };
     };
   }
 }
@@ -372,6 +385,10 @@ const App: React.FC = () => {
   const [streamText, setStreamText] = useState('');
   const [reasoningChars, setReasoningChars] = useState<number>(0);
   const [resultPageIndex, setResultPageIndex] = useState(0);
+  const [keyboardProtectionEnabled, setKeyboardProtectionEnabled] = useState(false);
+  const [showShortcutSelector, setShowShortcutSelector] = useState(false);
+  const [shortcuts, setShortcuts] = useState<KeyboardShortcut[]>([]);
+  const [enabledCount, setEnabledCount] = useState(0);
   const [solutionStyle, setSolutionStyle] = useState<SolutionStyle>(() => ({
     '--solution-code-font-size': '14px',
     '--solution-code-line-height': '1.35',
@@ -450,6 +467,48 @@ const App: React.FC = () => {
 
   useEffect(() => {
     console.log('Setting up event listeners...');
+
+    // Load keyboard protection status and shortcuts
+    const loadKeyboardProtection = async () => {
+      try {
+        const status = await window.electron.keyboardProtection.getStatus();
+        const allShortcuts = await window.electron.keyboardProtection.getShortcuts();
+
+        setShortcuts(allShortcuts);
+
+        // Always enable by default on first load or if disabled
+        if (!status.isActive) {
+          // If no shortcuts are configured yet, set defaults
+          if (status.enabledCount === 0) {
+            // Default: enable some common shortcuts
+            const defaultEnabled = ['Control+C', 'Control+V', 'Control+X', 'Control+Z', 'Control+F',
+                                   'Command+C', 'Command+V', 'Command+X', 'Command+Z', 'Command+F'];
+            const updated = allShortcuts.map(s => ({
+              ...s,
+              enabled: defaultEnabled.includes(s.key)
+            }));
+            await window.electron.keyboardProtection.updateShortcuts(updated);
+            const newShortcuts = await window.electron.keyboardProtection.getShortcuts();
+            setShortcuts(newShortcuts);
+          }
+
+          // Enable keyboard protection by default
+          const success = await window.electron.keyboardProtection.enable();
+          if (success) {
+            setKeyboardProtectionEnabled(true);
+            const newStatus = await window.electron.keyboardProtection.getStatus();
+            setEnabledCount(newStatus.enabledCount);
+          }
+        } else {
+          setKeyboardProtectionEnabled(status.isActive);
+          setEnabledCount(status.enabledCount);
+        }
+      } catch (error) {
+        console.error('Failed to load keyboard protection:', error);
+      }
+    };
+
+    loadKeyboardProtection();
 
     // Listen for processing started events
     window.electron.onProcessingStarted(() => {
@@ -647,6 +706,79 @@ const App: React.FC = () => {
     window.electron.quit();
   };
 
+  const toggleKeyboardProtection = async () => {
+    try {
+      if (keyboardProtectionEnabled) {
+        const success = await window.electron.keyboardProtection.disable();
+        if (success) {
+          setKeyboardProtectionEnabled(false);
+        }
+      } else {
+        const success = await window.electron.keyboardProtection.enable();
+        if (success) {
+          setKeyboardProtectionEnabled(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling keyboard protection:', error);
+      setError('Failed to toggle keyboard protection');
+    }
+  };
+
+  const toggleShortcutSelector = () => {
+    setShowShortcutSelector(!showShortcutSelector);
+  };
+
+  const toggleShortcut = async (key: string) => {
+    const updated = shortcuts.map(s =>
+      s.key === key ? { ...s, enabled: !s.enabled } : s
+    );
+    setShortcuts(updated);
+
+    try {
+      const success = await window.electron.keyboardProtection.updateShortcuts(updated);
+      if (success) {
+        const status = await window.electron.keyboardProtection.getStatus();
+        setEnabledCount(status.enabledCount);
+      }
+    } catch (error) {
+      console.error('Error updating shortcuts:', error);
+      setError('Failed to update shortcuts');
+    }
+  };
+
+  const selectAllShortcuts = async () => {
+    const updated = shortcuts.map(s => ({ ...s, enabled: true }));
+    setShortcuts(updated);
+
+    try {
+      const success = await window.electron.keyboardProtection.updateShortcuts(updated);
+      if (success) {
+        const status = await window.electron.keyboardProtection.getStatus();
+        setEnabledCount(status.enabledCount);
+      }
+    } catch (error) {
+      console.error('Error selecting all shortcuts:', error);
+      setError('Failed to select all shortcuts');
+    }
+  };
+
+  const deselectAllShortcuts = async () => {
+    const updated = shortcuts.map(s => ({ ...s, enabled: false }));
+    setShortcuts(updated);
+
+    try {
+      const success = await window.electron.keyboardProtection.updateShortcuts(updated);
+      if (success) {
+        const status = await window.electron.keyboardProtection.getStatus();
+        setEnabledCount(status.enabledCount);
+      }
+    } catch (error) {
+      console.error('Error deselecting all shortcuts:', error);
+      setError('Failed to deselect all shortcuts');
+    }
+  };
+
   // Log state changes
   useEffect(() => {
     console.log('State update:', {
@@ -681,6 +813,50 @@ const App: React.FC = () => {
           <button onClick={() => setError(null)}>&times;</button>
         </div>
       )}
+      {/* Keyboard Protection Toggle */}
+      <div className="keyboard-protection-panel">
+        <div className="keyboard-protection-header">
+          <label className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={keyboardProtectionEnabled}
+              onChange={toggleKeyboardProtection}
+            />
+            <span className="toggle-slider"></span>
+          </label>
+          <span className="toggle-label">
+            键盘保护 {keyboardProtectionEnabled ? '已启用' : '已禁用'}
+            {enabledCount > 0 && ` (${enabledCount} 个快捷键)`}
+          </span>
+          <button className="config-button" onClick={toggleShortcutSelector}>
+            {showShortcutSelector ? '隐藏配置' : '配置'}
+          </button>
+        </div>
+
+        {showShortcutSelector && (
+          <div className="shortcut-selector">
+            <div className="shortcut-selector-header">
+              <span>选择要阻止的快捷键：</span>
+              <div className="shortcut-selector-actions">
+                <button onClick={selectAllShortcuts}>全选</button>
+                <button onClick={deselectAllShortcuts}>全不选</button>
+              </div>
+            </div>
+            <div className="shortcut-list">
+              {shortcuts.map(shortcut => (
+                <label key={shortcut.key} className="shortcut-item">
+                  <input
+                    type="checkbox"
+                    checked={shortcut.enabled}
+                    onChange={() => toggleShortcut(shortcut.key)}
+                  />
+                  <span>{shortcut.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
       {/* Preview Row */}
       <div ref={shortcutsRowRef} className="shortcuts-row">
         <div className="shortcut"><code>⌘/Ctrl + H</code> Screenshot</div>

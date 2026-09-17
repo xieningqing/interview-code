@@ -4,6 +4,7 @@ import * as fs from 'fs/promises';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import openaiService from './services/openai';
+import keyboardProtection from './services/keyboardProtection';
 
 const execFileAsync = promisify(execFile);
 
@@ -20,6 +21,25 @@ let processingRunId = 0;
 let hasCompletedResult = false;
 const MAX_SCREENSHOTS = 4;
 const SCREENSHOT_DIR = path.join(app.getPath('temp'), 'screenshots');
+
+// Register whitelist shortcut handlers early, before any window is created
+// This ensures handlers are registered before keyboardProtection.enable() is called
+function registerWhitelistShortcutHandlers() {
+  console.log('[Main] Registering whitelist shortcut handlers');
+  keyboardProtection.registerShortcutHandler('H', handleTakeScreenshot);
+  keyboardProtection.registerShortcutHandler('R', handleResetQueue);
+  keyboardProtection.registerShortcutHandler('B', handleToggleVisibility);
+  keyboardProtection.registerShortcutHandler('Q', () => {
+    console.log('[Main] Ctrl+Q handler triggered, quitting app');
+    app.quit();
+  });
+  keyboardProtection.registerShortcutHandler('ENTER', handleProcessScreenshots);
+  keyboardProtection.registerShortcutHandler('LEFT', () => handleHorizontalShortcut('left'));
+  keyboardProtection.registerShortcutHandler('RIGHT', () => handleHorizontalShortcut('right'));
+  keyboardProtection.registerShortcutHandler('UP', () => moveWindow('up'));
+  keyboardProtection.registerShortcutHandler('DOWN', () => moveWindow('down'));
+  console.log('[Main] Whitelist handlers registered:', ['H', 'R', 'B', 'Q', 'ENTER', 'LEFT', 'RIGHT', 'UP', 'DOWN']);
+}
 
 async function ensureScreenshotDir() {
   try {
@@ -100,10 +120,10 @@ function registerShortcuts() {
   register('CommandOrControl+Enter', handleProcessScreenshots);
   register('CommandOrControl+R', handleResetQueue);
   register('CommandOrControl+Q', () => app.quit());
-  
+
   // Window visibility
   register('CommandOrControl+B', handleToggleVisibility);
-  
+
   // Window movement before results, page navigation after results.
   register('CommandOrControl+Left', () => handleHorizontalShortcut('left'));
   register('CommandOrControl+Right', () => handleHorizontalShortcut('right'));
@@ -113,7 +133,6 @@ function registerShortcuts() {
   register('CommandOrControl+Shift+.', () => handleHorizontalShortcut('right'));
   register('CommandOrControl+Up', () => moveWindow('up'));
   register('CommandOrControl+Down', () => moveWindow('down'));
-
 }
 
 async function captureScreenshot(): Promise<Buffer> {
@@ -318,6 +337,11 @@ function handleHorizontalShortcut(direction: 'left' | 'right') {
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
   await ensureScreenshotDir();
+
+  // Register whitelist shortcut handlers BEFORE creating window
+  // This ensures handlers are available when keyboardProtection.enable() is called
+  registerWhitelistShortcutHandlers();
+
   createWindow();
 
   app.on('activate', function () {
@@ -327,6 +351,7 @@ app.whenReady().then(async () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  keyboardProtection.cleanup();
   handleResetQueue();
 });
 
@@ -361,3 +386,27 @@ ipcMain.on('quit-app', () => {
 });
 
 ipcMain.on('toggle-visibility', handleToggleVisibility);
+
+// Keyboard protection handlers
+ipcMain.handle('keyboard-protection-enable', () => {
+  return keyboardProtection.enable();
+});
+
+ipcMain.handle('keyboard-protection-disable', () => {
+  return keyboardProtection.disable();
+});
+
+ipcMain.handle('keyboard-protection-status', () => {
+  return {
+    isActive: keyboardProtection.isActive(),
+    enabledCount: keyboardProtection.getEnabledCount()
+  };
+});
+
+ipcMain.handle('keyboard-protection-get-shortcuts', () => {
+  return keyboardProtection.getShortcuts();
+});
+
+ipcMain.handle('keyboard-protection-update-shortcuts', (_, shortcuts) => {
+  return keyboardProtection.updateShortcuts(shortcuts);
+});
