@@ -10,8 +10,11 @@
     "test:parsing": "tsc && node scripts/test-solution-parsing.js",
     "dev": "concurrently \"npm run watch\" \"electron .\"",
     "pack": "npm run build && electron-builder --dir",
+    "predist": "node scripts/verify-native-module.js",
     "dist": "npm run build && electron-builder && node scripts/clean-release-metadata.js",
+    "predist:mac": "node scripts/verify-native-module.js",
     "dist:mac": "npm run build && electron-builder --mac zip --x64 && node scripts/clean-mac-release.js",
+    "predist:win": "node scripts/verify-native-module.js",
     "dist:win": "npm run build && electron-builder --win portable --x64 && node scripts/copy-env-example.js"
   },
   "author": "",
