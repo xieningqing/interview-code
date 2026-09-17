@@ -16,7 +16,8 @@
 
 ### Technical Changes
 - Install `visualstudio2022-workload-vctools` via Chocolatey in CI
-- Configure node-gyp with explicit VS 2022 version
+- Configure node-gyp using environment variables (`npm_config_msvs_version=2022`, `GYP_MSVS_VERSION=2022`)
+- Fixed invalid npm config command for Visual Studio version selection
 - Removed redundant environment variables and simplified build steps
 - Cleaned up root directory from 27+ markdown files to 2 core docs
 
