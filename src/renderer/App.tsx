@@ -390,11 +390,11 @@ const App: React.FC = () => {
   const [shortcuts, setShortcuts] = useState<KeyboardShortcut[]>([]);
   const [enabledCount, setEnabledCount] = useState(0);
   const [solutionStyle, setSolutionStyle] = useState<SolutionStyle>(() => ({
-    '--solution-code-font-size': '12px',
+    '--solution-code-font-size': '14px',
     '--solution-code-line-height': '1.35',
-    '--solution-body-font-size': '12px',
-    '--solution-line-number-size': '10px',
-    '--solution-stream-font-size': '12px',
+    '--solution-body-font-size': '14px',
+    '--solution-line-number-size': '11px',
+    '--solution-stream-font-size': '14px',
     '--solution-max-height': '360px'
   }));
   const streamTextRef = useRef('');
@@ -436,8 +436,8 @@ const App: React.FC = () => {
       const availableWidth = Math.max(statusWidth - 48, 320);
       const availableHeight = Math.max(viewportHeight - chromeHeight, 220);
       const fontSize = estimateMonospaceFontSize(availableWidth, availableHeight, {
-        min: 12,
-        max: 15
+        min: 14,
+        max: 18
       });
 
       setSolutionStyle({

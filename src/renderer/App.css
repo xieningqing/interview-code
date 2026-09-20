@@ -60,7 +60,7 @@ body {
 .processing {
   color: #abb2bf;
   font-weight: 500;
-  font-size: var(--solution-body-font-size, 12px);
+  font-size: var(--solution-body-font-size, 14px);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -84,14 +84,14 @@ body {
   display: flex;
   justify-content: flex-end;
   color: #abb2bf;
-  font-size: calc(var(--solution-body-font-size, 12px) * 0.78);
+  font-size: calc(var(--solution-body-font-size, 14px) * 0.78);
   line-height: 1;
   min-height: 0.75rem;
 }
 
 .page-subtitle {
   color: #7c8089;
-  font-size: calc(var(--solution-body-font-size, 12px) * 0.72);
+  font-size: calc(var(--solution-body-font-size, 14px) * 0.72);
   font-weight: normal;
   margin-left: 0.5rem;
 }
@@ -110,7 +110,7 @@ body {
 .stream-output code {
   display: block;
   color: #abb2bf;
-  font-size: var(--solution-stream-font-size, 12px);
+  font-size: var(--solution-stream-font-size, 14px);
   line-height: var(--solution-code-line-height, 1.35);
   white-space: pre-wrap;
 }
@@ -308,7 +308,7 @@ body {
 .solution-section h3 {
   margin: 0 0 0.5rem 0;
   color: #e8ebef;
-  font-size: calc(var(--solution-body-font-size, 12px) * 1.08);
+  font-size: calc(var(--solution-body-font-size, 14px) * 1.08);
 }
 
 .solution-section pre {
@@ -318,14 +318,14 @@ body {
   border-radius: 4px;
   overflow: auto;
   max-height: var(--solution-max-height, 420px);
-  font-size: var(--solution-code-font-size, 12px);
+  font-size: var(--solution-code-font-size, 14px);
   line-height: var(--solution-code-line-height, 1.35) !important;
 }
 
 .solution-section code {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 
-  font-size: var(--solution-code-font-size, 12px) !important;
+  font-size: var(--solution-code-font-size, 14px) !important;
   line-height: var(--solution-code-line-height, 1.35) !important;
 
   display: block;
@@ -338,7 +338,7 @@ body {
   margin: 0.5rem 0;
   line-height: 1.45;
   color: #c6c9cc;
-  font-size: var(--solution-body-font-size, 12px);
+  font-size: var(--solution-body-font-size, 14px);
 }
 
 .solution-section .text-block {
@@ -612,157 +612,4 @@ input:checked + .toggle-slider:before {
 
 .toggle-slider:hover {
   opacity: 0.9;
-}
-/*
- * Adaptive overlay surface
- *
- * The Electron window is transparent, so keep the UI chrome translucent and
- * let Chromium sample the pixels behind it.  A backdrop blur gives the text a
- * stable reading surface while preserving the hue and brightness of the app
- * underneath.  Avoid opaque colours here: the overlay should blend in at any
- * window position.
- */
-html,
-body,
-#root {
-  min-height: 100%;
-  background: transparent !important;
-}
-
-body {
-  padding: 8px;
-  color: rgba(248, 249, 251, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
-}
-
-.app {
-  isolation: isolate;
-  background: transparent !important;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-/* The sections use the same backdrop as the shell instead of opaque dark cards. */
-.shortcuts-row,
-.preview-row,
-.status-row,
-.solution-section,
-.stream-output,
-.solution-section pre,
-.solution-section .text-block {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.008)),
-    rgba(128, 128, 128, 0.018);
-  border: 1px solid rgba(255, 255, 255, 0.075);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(22px) saturate(120%);
-  -webkit-backdrop-filter: blur(22px) saturate(120%);
-}
-
-.shortcuts-row {
-  border-radius: 10px;
-}
-
-.preview-row {
-  border-radius: 10px;
-}
-
-.status-row {
-  border-radius: 12px;
-}
-
-.preview-item {
-  background: rgba(128, 128, 128, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-}
-
-.stream-output,
-.solution-section pre,
-.solution-section .text-block {
-  border-radius: 8px;
-}
-
-.solution-section {
-  border-radius: 10px;
-}
-
-.shortcut,
-.empty-status,
-.processing,
-.page-subtitle,
-.hint {
-  color: rgba(248, 249, 251, 0.84);
-}
-
-.shortcut code {
-  background: rgba(128, 128, 128, 0.09);
-}
-
-.solution-section h3,
-.solution-section p,
-.solution-section code,
-.stream-output code,
-code {
-  color: rgba(248, 249, 251, 0.9);
-}
-
-.hover-shortcuts-content {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)),
-    rgba(64, 64, 64, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(24px) saturate(125%);
-  -webkit-backdrop-filter: blur(24px) saturate(125%);
-}
-
-.hover-shortcuts-content::after {
-  border-left-color: rgba(64, 64, 64, 0.28);
-}
-
-/* Keep the adaptive surface subtle when the OS is using a light appearance. */
-@media (prefers-color-scheme: light) {
-  body {
-    color: rgba(24, 28, 34, 0.88);
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.36);
-  }
-
-  .app {
-    background: transparent !important;
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  .shortcuts-row,
-  .preview-row,
-  .status-row,
-  .solution-section,
-  .stream-output,
-  .solution-section pre,
-  .solution-section .text-block {
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.015)),
-      rgba(255, 255, 255, 0.018);
-    border-color: rgba(0, 0, 0, 0.08);
-  }
-
-  .shortcut,
-  .empty-status,
-  .processing,
-  .page-subtitle,
-  .hint,
-  .solution-section h3,
-  .solution-section p,
-  .solution-section code,
-  .stream-output code,
-  code {
-    color: rgba(24, 28, 34, 0.86);
-  }
-
-  .shortcut code {
-    background: rgba(255, 255, 255, 0.3);
-  }
 }
